@@ -1,0 +1,94 @@
+# evp 项目配置模板（相对路径以本文件所在目录为基准）
+# 完整默认值见 evp/config.py:DEFAULTS；命令行可用 --set a.b=value 临时覆盖
+
+project:
+  name: demo
+
+# 类别顺序 = YOLO 类别 id，训练开始后不要再改顺序
+classes: [defect, scratch]
+
+paths:
+  prelabel_model: models/prelabel.pt      # 自备检测权重；类别名需与 classes 一致
+  raw_images: workspace/raw_images        # 新采集、待标注的图片
+  labelme_dir: workspace/labelme          # 预标注 json + 图片，人工在 LabelMe 里复检
+  batch_dataset: workspace/batch_dataset  # 本批次转换出的 YOLO 数据（中转）
+  corpus_root: workspace/corpus           # 累积训练语料（data.yaml 在这里）
+  runs: workspace/runs                    # 训练输出
+  deploy_out: workspace/deploy            # 部署包输出
+
+collect:                    # evp collect / 工作台“图像采集”，写入 paths.raw_images
+  dedup_hamming: -1         # 近重复过滤（dHash 汉明距离）；-1 关闭。产线良品/缺陷外观相近，默认关闭；视频/相机建议 4
+  min_sharpness: 0.0        # 模糊过滤（Laplacian 方差）；0 关闭
+  video_every_sec: 1.0      # 视频抽帧间隔（秒）
+  max_frames: 0             # 视频最多保存帧数；0 不限
+  camera: 0                 # 相机序号或 RTSP/HTTP 流地址
+  camera_count: 20
+  camera_interval: 1.0
+  jpeg_quality: 95
+  dedup_against_corpus: true  # 与已入库语料去重（完全相同的图片总是会被过滤）
+
+prelabel:
+  conf: 0.25
+  iou: 0.45
+  imgsz: 640
+  device: auto           # auto = 有 CUDA 用 GPU 0，否则 cpu；也可写 cpu / "0"
+  embed_image_data: false
+
+dataset:
+  val_ratio: 0.1
+  seed: 42
+  clear_after_merge: true   # 合并进语料后清空 raw/labelme/batch 中转目录
+
+train:
+  base_weights: yolo11n.pt  # 板端是 Cortex-A7 CPU，建议 n 级模型
+  epochs: 100
+  batch: 16
+  imgsz: 640
+  workers: 8
+  device: auto              # auto = 有 CUDA 用 GPU 0，否则 cpu（CPU 训练很慢，正式训练请用 GPU 机）
+  amp: true
+  close_mosaic: 10
+  run_name: train
+  extra: {}                 # 透传给 Ultralytics model.train(**extra)
+
+deploy:
+  weights: auto             # auto = 最新训练的 best.pt；也可写 .pt / .onnx 路径
+  name: ""                  # 部署包名，默认取权重文件名
+  family: auto              # auto | yolo | classify | raw（通用 ONNX）
+  e2e: false                # YOLO26: true=一对一无 NMS 头；false=一对多+NMS（int8 更稳）
+  imgsz: [320, 320]         # [h, w]，检测模型需为 32 的倍数；A7 上建议 256~320
+  input_color: RGB
+  weights_fp16: false
+  # 通用 ONNX：mean/norm 描述“像素 -> 原始 ONNX 输入”（x=(p-mean)*norm）。图内自带归一化且不填时默认输入 0..255 像素；
+  # 图内没有归一化且不填时默认 p/255（报告会提示确认）
+  input: {resize: null, mean: null, norm: null, pad_value: null}
+  labels: []                # 通用 ONNX 的类别名
+  post:
+    conf: 0.25
+    iou: 0.45
+    max_det: 100
+    agnostic_nms: false
+    topk: 5
+  quant:
+    enable: true
+    calib_images: auto      # auto = 语料 train 图片；建议 64~200 张现场图
+    calib_count: 64
+    method: auto            # auto(kl/aciq 取优) | kl | aciq | eq
+    target_cos: 0.97
+    keep_output_layers_fp32: true
+    auto_mixed_precision: true
+    max_fp32_layers: 16
+    fp32_layers: []
+    eval_count: 16
+  verify:
+    images: auto            # auto = 语料 val 图片
+    count: 32
+    min_fp32_cos: 0.999
+    min_int8_cos: 0.93
+    min_e2e_match: 0.9
+  onnx:
+    cut_outputs: []         # 通用 ONNX：在后处理算子前截断，如 ["/model.22/Concat_output_0"]，或 auto
+    rules: default          # default | none | [rule, ...]
+  tools_dir: ""             # 本机 pnnx / ncnn2table 所在目录（留空自动查找，Windows 下回退 WSL）
+  wsl_distro: ""
+  cpp_runtime: true         # 部署时编译并比对 C++ 运行时

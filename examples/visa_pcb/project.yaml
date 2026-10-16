@@ -1,0 +1,39 @@
+# 工业缺陷检测 Demo：VisA PCB（pcb1-3，CC BY 4.0）四类缺陷 bent / melt / missing / scratch
+# 数据准备见 examples/visa_pcb/README.md；workspace/ 不入库
+
+project:
+  name: visa_pcb
+
+classes: ["bent", "melt", "missing", "scratch"]
+
+paths:
+  prelabel_model: workspace/runs/pcb/weights/best.pt
+  raw_images: workspace/raw_images
+  labelme_dir: workspace/labelme
+  batch_dataset: workspace/batch_dataset
+  corpus_root: workspace/corpus
+  runs: workspace/runs
+  deploy_out: workspace/deploy
+
+dataset:
+  val_ratio: 0.15
+  seed: 0
+
+train:
+  base_weights: ../../models/pretrained/yolo11n.pt
+  epochs: 80
+  batch: 16
+  imgsz: 640
+  workers: 4
+  device: auto
+  run_name: pcb
+  close_mosaic: 10
+  extra: {patience: 30, plots: true}
+
+deploy:
+  imgsz: [640, 640]
+  quant:
+    calib_count: 64
+    eval_count: 16
+  verify:
+    count: 32

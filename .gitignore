@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+
+# local data, weights and generated outputs
+workspace/
+models/
+scratch/
+deploy_out/
+*.onnx
+*.pt
+!examples/onnx_rewrite/cast_transpose_l2.onnx

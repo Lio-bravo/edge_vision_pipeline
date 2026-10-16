@@ -1,0 +1,13 @@
+numpy>=1.23
+pyyaml>=6
+pillow>=9
+opencv-python>=4.6
+onnx>=1.15
+onnxruntime>=1.16
+onnxslim>=0.1.30
+ncnn>=1.0.20240410
+torch>=2.1
+ultralytics>=8.3
+gradio>=6.14,<7
+gradio_image_annotation>=0.5.6,<0.6
+pytest>=7

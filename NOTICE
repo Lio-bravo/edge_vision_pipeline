@@ -1,0 +1,16 @@
+edge_vision_pipeline (evp)
+Copyright (c) 2026 edge_vision_pipeline contributors
+
+This project is distributed under two licenses, split by directory:
+
+  * runtime/cpp/  (C++ board runtime: meta parser, pre/post-processing, demo, unit tests)
+      Apache License 2.0 -- see runtime/cpp/LICENSE
+      This directory is copied into every deploy bundle (<bundle>/runtime/) so that it can be
+      compiled into board firmware under permissive terms. It depends only on ncnn (BSD-3-Clause).
+
+  * everything else (Python toolchain evp/, tests/, scripts/, configs/, docs/)
+      GNU Affero General Public License v3.0 only -- see LICENSE
+      The toolchain imports Ultralytics (AGPL-3.0) for training, export and prelabeling.
+
+Every source file carries an SPDX-License-Identifier header (check: python scripts/add_spdx.py --check).
+Third-party components and their licenses are listed in THIRD_PARTY_LICENSES.md.
